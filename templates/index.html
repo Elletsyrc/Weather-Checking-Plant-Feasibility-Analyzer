@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌦️ Weather–Plant Success Simulator</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<header class="app-header">
+  <h1>🌦️ Weather–Plant Success Simulator</h1>
+  <p class="subtitle">Real weather data + heat-transfer &amp; water-balance physics → plant growth predictions</p>
+</header>
+
+<main class="layout">
+
+  <!-- ============ LEFT: CONTROLS ============ -->
+  <section class="panel controls-panel">
+
+    <div class="card">
+      <h2>1. Location</h2>
+      <div class="row">
+        <input id="locationInput" type="text" placeholder="e.g. Manila, Philippines" value="Manila">
+        <button id="fetchWeatherBtn" class="btn primary">Get Weather</button>
+      </div>
+      <div id="weatherStatus" class="status-msg"></div>
+    </div>
+
+    <div class="card">
+      <h2>2. Plant Profile</h2>
+      <div class="row">
+        <select id="plantSelect"></select>
+        <button id="newPlantBtn" class="btn secondary" title="Create a new plant profile">+ New</button>
+      </div>
+      <div id="plantDesc" class="plant-desc"></div>
+      <button id="editPlantBtn" class="btn ghost full-width">✎ Edit Plant Characteristics</button>
+    </div>
+
+    <div class="card">
+      <button id="simulateBtn" class="btn primary full-width big">▶ Run Simulation</button>
+    </div>
+
+    <div class="card" id="currentConditionsCard" style="display:none;">
+      <h2>Current Conditions</h2>
+      <div id="currentConditions" class="conditions-grid"></div>
+    </div>
+
+  </section>
+
+  <!-- ============ RIGHT: OUTPUT ============ -->
+  <section class="panel output-panel">
+
+    <div class="card result-card" id="resultCard" style="display:none;">
+      <div class="result-top">
+        <div id="plantVisual" class="plant-visual"></div>
+        <div class="result-summary">
+          <h2 id="resultPlantName">—</h2>
+          <div class="score-big" id="resultScore">--%</div>
+          <div class="status-pill" id="resultStatus">—</div>
+          <div class="limiting-factor" id="limitingFactor"></div>
+        </div>
+      </div>
+
+      <h3>Ideal Ranges vs. Today's Conditions</h3>
+      <div id="idealComparison" class="ideal-comparison"></div>
+    </div>
+
+    <div class="card chart-card" id="chartCard" style="display:none;">
+      <h2>7-Day Growth Potential</h2>
+      <canvas id="growthChart" height="110"></canvas>
+    </div>
+
+    <div class="card chart-card" id="factorChartCard" style="display:none;">
+      <h2>Environmental Factor Scores (Today)</h2>
+      <canvas id="factorChart" height="110"></canvas>
+    </div>
+
+    <div class="card chart-card" id="soilChartCard" style="display:none;">
+      <h2>Soil Moisture Simulation (7 Days)</h2>
+      <canvas id="soilChart" height="90"></canvas>
+    </div>
+
+    <div id="emptyState" class="empty-state">
+      <div class="empty-icon">🌱</div>
+      <p>Pick a location and plant, then hit <strong>Run Simulation</strong> to see how it will fare.</p>
+    </div>
+
+  </section>
+</main>
+
+<!-- ============ PLANT EDITOR MODAL ============ -->
+<div id="plantModal" class="modal-overlay hidden">
+  <div class="modal">
+    <h2 id="modalTitle">Edit Plant Profile</h2>
+    <form id="plantForm">
+      <input type="hidden" id="f_original_id">
+
+      <div class="form-row">
+        <label>Name <input type="text" id="f_name" required></label>
+        <label>Icon (emoji) <input type="text" id="f_icon" maxlength="4"></label>
+      </div>
+      <label class="full">Description
+        <textarea id="f_description" rows="2"></textarea>
+      </label>
+
+      <fieldset>
+        <legend>🌡️ Temperature (°C)</legend>
+        <div class="range-inputs">
+          <label>Min (lethal below) <input type="number" step="0.1" id="f_temp_min" required></label>
+          <label>Low (ideal starts) <input type="number" step="0.1" id="f_temp_low" required></label>
+          <label>High (ideal ends) <input type="number" step="0.1" id="f_temp_high" required></label>
+          <label>Max (lethal above) <input type="number" step="0.1" id="f_temp_max" required></label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>💧 Humidity (%)</legend>
+        <div class="range-inputs">
+          <label>Min <input type="number" step="0.1" id="f_humidity_min" required></label>
+          <label>Low <input type="number" step="0.1" id="f_humidity_low" required></label>
+          <label>High <input type="number" step="0.1" id="f_humidity_high" required></label>
+          <label>Max <input type="number" step="0.1" id="f_humidity_max" required></label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>☀️ Sunlight (hours/day)</legend>
+        <div class="range-inputs">
+          <label>Min <input type="number" step="0.1" id="f_sunlight_min" required></label>
+          <label>Low <input type="number" step="0.1" id="f_sunlight_low" required></label>
+          <label>High <input type="number" step="0.1" id="f_sunlight_high" required></label>
+          <label>Max <input type="number" step="0.1" id="f_sunlight_max" required></label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>🌧️ Rainfall / Water Need (mm/day equivalent)</legend>
+        <div class="range-inputs">
+          <label>Min <input type="number" step="0.1" id="f_rainfall_min" required></label>
+          <label>Low <input type="number" step="0.1" id="f_rainfall_low" required></label>
+          <label>High <input type="number" step="0.1" id="f_rainfall_high" required></label>
+          <label>Max <input type="number" step="0.1" id="f_rainfall_max" required></label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>🌬️ Wind Tolerance (km/h)</legend>
+        <div class="range-inputs">
+          <label>Min <input type="number" step="0.1" id="f_wind_min" required></label>
+          <label>Low <input type="number" step="0.1" id="f_wind_low" required></label>
+          <label>High <input type="number" step="0.1" id="f_wind_high" required></label>
+          <label>Max <input type="number" step="0.1" id="f_wind_max" required></label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>🔬 Physical Properties</legend>
+        <div class="range-inputs">
+          <label>Leaf absorptivity (0-1)
+            <input type="number" step="0.05" min="0" max="1" id="f_leaf_absorptivity" required></label>
+          <label>Soil water capacity (mm)
+            <input type="number" step="1" id="f_soil_water_capacity" required></label>
+        </div>
+      </fieldset>
+
+      <div class="modal-actions">
+        <button type="button" id="deletePlantBtn" class="btn danger">Delete Plant</button>
+        <div class="spacer"></div>
+        <button type="button" id="cancelModalBtn" class="btn ghost">Cancel</button>
+        <button type="submit" class="btn primary">Save Plant</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
