@@ -1,4 +1,4 @@
-# 🌦️ Weather–Plant Success Simulator
+# Weather-Checking-Plant-Feasibility-Analyzer
 
 A full-stack simulator that pulls **real weather data**, models **leaf heat transfer**
 and **soil water balance** with simple physics equations, and scores how well a
