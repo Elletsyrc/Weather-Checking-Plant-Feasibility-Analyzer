@@ -110,4 +110,5 @@ scored 0–100 with a trapezoidal membership function: 100 inside the plant's id
 - Add multiple micro-climate zones (greenhouse vs open field) as a modifier on the model.
 - Swap the trapezoidal scoring for a Gaussian curve if you want smoother falloff.
 
-![System Configurations](images/Screenshot%20(1142).png)
+![image1](images/Screenshot%20(1142).png)
+![image2](images/Screenshot%20(1143).png)
